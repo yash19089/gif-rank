@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.2/css/bootstrap.min.css">
+
+    <title>Giphy Web</title>
+</head>
+<body>
+
+<div class="container mt-5">
+    <ul class="nav nav-tabs" id="myTabs">
+        <li class="nav-item">
+            <a class="nav-link active" id="tab1" data-bs-toggle="tab" href="#pane1">Create Tasks</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="tab2" data-bs-toggle="tab" href="#pane2">Fetch GIFs From Channel</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="tab3" data-bs-toggle="tab" href="#pane3">Watch Progress</a>
+        </li>
+<!--        <li class="nav-item">-->
+<!--            <a class="nav-link" id="tab4" data-bs-toggle="tab" href="#pane4">View Rank History</a>-->
+<!--        </li>-->
+    </ul>
+
+    <div class="tab-content mt-2" id="myTabContent">
+        <div class="tab-pane fade show active" id="pane1">
+            <form id="pane1_form">
+                <input type="file" accept=".txt" id="pane1_file_input" required>
+                <button type="submit" class="btn btn-primary" id="pane1_submit">Submit</button>
+            </form>
+
+            <img src="https://media.tenor.com/DehpokEAjJEAAAAj/cat-loading.gif" alt="loading icon" id="pane1_loader" class="d-none">
+
+            <table id="pane1_table" class="table table-striped d-none">
+                <thead>
+                <tr>
+                    <th>Tag Name</th>
+                    <th>GIF ID</th>
+                    <th>Title</th>
+                    <th>URL</th>
+                    <th>Target Count</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="pane1_tbody">
+                <!-- Table rows will be dynamically generated using JavaScript -->
+                </tbody>
+            </table>
+
+            <button id="pane1_task_submit" class="d-none btn btn-primary">Submit Tasks</button>
+
+        </div>
+        <div class="tab-pane fade" id="pane2">
+            <div class="container mt-5">
+                <form id="pane2_form">
+                    <div class="mb-3">
+                        <label for="pane2_channel_url" class="form-label">Channel URL:</label>
+                        <input placeholder="https://giphy.com/SL_Benfica" type="text" class="form-control" id="pane2_channel_url" required>
+                    </div>
+                    <button type="submit" id="pane2_submit" class="btn btn-primary">Submit</button>
+                </form>
+
+                <div id="pane2_loader" class="mt-3 d-none">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="pane2_result" class="mt-3 d-none">
+                    <h3>Results:</h3>
+                    <p><strong>Channel Name:</strong><span id="pane2_channel_name"></span></p>
+                    <p><strong>Total GIFs:</strong><span id="pane2_total_gifs"></span></p>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="pane3">
+            <span>Refreshing in <span id="pane3_countdown">30</span> seconds</span>
+            <table id="pane3_table" class="table">
+                <thead>
+                <tr>
+                    <th>Tag Name</th>
+                    <th>Batch ID</th>
+                    <th>Progress</th>
+                    <th>Skipped</th>
+                    <th>Created At</th>
+                </tr>
+                </thead>
+                <tbody id="pane3_tbody">
+
+                </tbody>
+            </table>
+        </div>
+        <div class="tab-pane fade" id="pane4">
+            <h3>Content for Tab 4</h3>
+            <p>This is the content that will be displayed when Tab 4 is active.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.2/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
