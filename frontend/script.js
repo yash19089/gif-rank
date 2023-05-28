@@ -1,5 +1,5 @@
 
-const SERVER_BASE_URL= "http://localhost:3000";
+const SERVER_BASE_URL= "http://54.167.173.132";
 
 function downloadArrayAsTxtFile(array, fileName) {
     const content = array.join('\n');
