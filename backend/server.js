@@ -135,7 +135,10 @@ app.get('/progress', async (req, res) => {
                     Sequelize.fn('SUM', Sequelize.literal('CASE WHEN isPossible = 0 THEN targetCount ELSE 0 END')),
                     'impossibleTargetCount'
                 ],
-                [Sequelize.literal('"createdAt"'), 'createdAt']
+                [
+                    Sequelize.literal('(SELECT createdAt FROM Tasks AS t WHERE t.tagName = Task.tagName AND t.batchId = Task.batchId LIMIT 1)'),
+                    'createdAt'
+                ]
             ],
             group: ['tagName', 'batchId'],
         });
