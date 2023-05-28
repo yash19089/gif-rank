@@ -105,6 +105,18 @@ app.get('/feed', async (req, res) => {
     }
 });
 
+app.get('/view-count/:id', async (req, res) => {
+    const { id } = req.params;
+    const url = `https://giphy.com/api/v1/users/${id}/view-count/`;
+
+    try {
+        const response = await axios.get(url);
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/progress', async (req, res) => {
     try {
         const progressData = await Task.findAll({
