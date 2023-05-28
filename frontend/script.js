@@ -260,7 +260,7 @@ class Tab2 {
                 this.userId = data.data[0].user.id;
                 return id;
             }).then((id) => {
-                fetch(`https://giphy.com/api/v1/users/${this.userId}/view-count/`)
+                fetch(`${SERVER_BASE_URL}/view-count/${this.userId}`)
                     .then(response => response.json())
                     .then((response) => {
                         const {uploadCount} = response;
