@@ -1,5 +1,5 @@
 
-const SERVER_BASE_URL= "http://54.167.173.132";
+const SERVER_BASE_URL= "https://giphy-api.socialverseapp.com";
 
 function downloadArrayAsTxtFile(array, fileName) {
     const content = array.join('\n');
