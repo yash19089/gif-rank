@@ -1,16 +1,20 @@
 const express = require('express');
-const { Task } = require('./utils/sequelize');
+const { Task, Proxy } = require('./utils/sequelize');
 const {runPreChecks} = require('./utils/precheck');
-const {generateBatchId, sendTasksToQueue} = require('./utils/helpers')
+const {generateBatchId, sendTasksToQueue, proxyHealthChecker} = require('./utils/helpers')
 const cors = require('cors');
 const axios = require("axios");
+const fs = require('fs');
 const {Sequelize} = require("sequelize");
+const fileUpload = require('express-fileupload');
+
 
 runPreChecks();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload()); // Don't forget this line!
 
 // Route to handle bulk task creation
 app.post('/bulk-tasks', (req, res) => {
@@ -117,6 +121,78 @@ app.get('/view-count/:id', async (req, res) => {
     }
 });
 
+app.get('/proxies/count', async (req, res) => {
+    try {
+        const activeCount = await Proxy.count({ where: { isInactive: false } });
+        const inactiveCount = await Proxy.count({ where: { isInactive: true } });
+        const totalCount = await Proxy.count();
+
+        res.json({ activeCount, inactiveCount, totalCount });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error retrieving proxy counts' });
+    }
+});
+
+app.get('/proxies/download/:status', async (req, res) => {
+    const { status } = req.params;
+
+    try {
+        let proxies;
+
+        if (status === 'active') {
+            proxies = await Proxy.findAll({ where: { isInactive: false } });
+        } else if (status === 'inactive') {
+            proxies = await Proxy.findAll({ where: { isInactive: true } });
+        } else {
+            proxies = await Proxy.findAll();
+        }
+
+        const proxyList = proxies.map((proxy) => `${proxy.ip}:${proxy.port}:${proxy.username}:${proxy.password}`).join('\n');
+
+        res.header('Content-Type', 'text/plain');
+        res.attachment('proxies.txt');
+        res.send(proxyList);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error downloading proxies' });
+    }
+});
+
+app.delete('/proxies/inactive', async (req, res) => {
+    try {
+        await Proxy.destroy({ where: { isInactive: true } });
+        res.json({ message: 'Inactive proxies deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error deleting inactive proxies' });
+    }
+});
+
+app.post('/proxies/upload', async (req, res) => {
+    try {
+
+
+        const data = req.files['file'].data.toString('utf8');
+
+        // Process the file content
+        const proxies = data.split('\n').map((line) => {
+            const [ip, port, username, password] = line.split(':');
+            return { ip, port, username, password, isInactive: false };
+        });
+
+        // Insert proxies into the database
+        await Proxy.bulkCreate(proxies);
+
+        // Remove the temporary file
+
+        res.json({ message: 'Proxies uploaded successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error uploading proxies' });
+    }
+});
+
 app.get('/progress', async (req, res) => {
     try {
         const progressData = await Task.findAll({
@@ -153,5 +229,6 @@ app.get('/progress', async (req, res) => {
 // Start the Express server
 app.listen(3000, () => {
     console.log('Server listening on port 3000');
-    setInterval(sendTasksToQueue, 10000); // Runs every 30 seconds
+    setInterval(sendTasksToQueue, 30000); // Runs every 30 seconds
+    setInterval(proxyHealthChecker, 10000)
 });

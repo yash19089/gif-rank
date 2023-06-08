@@ -3,6 +3,7 @@ const axios = require("axios");
 const {Task, Proxy, History} = require("./utils/sequelize");
 const {sqs} = require("./utils/aws");
 const shuffle = require('shuffle-array');
+const {Op, Sequelize} = require("sequelize");
 const proxies = [];
 let isProcessingMessage = false;
 let frontendMobileApiKey = "KS6TYwUbP40o6bHh4Je0QOMXRlBTx6Pa";
@@ -269,8 +270,8 @@ const receiveMessages = async () => {
         const messages = response.Messages || [];
 
         if (messages.length > 0) {
-            //Shuffle proxies
-            shuffle(proxies);
+            await checkProxyCount();
+            await loadProxies();
 
             isProcessingMessage = true; // Set the processing flag to true
 
@@ -303,8 +304,16 @@ const checkProxyCount = async () => {
 };
 
 const loadProxies = async () => {
-    const proxyData = await Proxy.findAll();
-
+    proxies.length = 0;
+    const proxyData = await Proxy.findAll({
+        where: {
+            isInactive: {
+                [Op.ne]: true,
+            },
+        },
+        order: Sequelize.literal('RANDOM()'), // Order the results randomly
+        limit: 250, // Limit the number of records to 250
+    });
     for(const proxy of proxyData){
         proxies.push({
             host: proxy.ip,
@@ -319,8 +328,5 @@ const loadProxies = async () => {
 
 // Initialize the worker
 runPreChecks();
-checkProxyCount()
-    .then(loadProxies)
-    .then(startWorker);
-
+startWorker();
 

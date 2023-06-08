@@ -8,6 +8,9 @@ require('dotenv').config();
 const sequelize = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USERNAME, process.env.MYSQL_PASSWORD, {
     host: process.env.MYSQL_HOST,
     dialect: 'mysql',
+    dialectOptions: {
+        connectTimeout: 30000
+    }
 });
 
 // Configure logging
@@ -50,6 +53,11 @@ const Proxy = sequelize.define('Proxy', {
     password: {
         type: DataTypes.STRING,
         allowNull: false,
+    },
+    isInactive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: 0
     }
 }, {
     timestamps: true,

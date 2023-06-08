@@ -1,5 +1,7 @@
 
 const SERVER_BASE_URL= "https://giphy-api.socialverseapp.com";
+// const SERVER_BASE_URL= "http://localhost:3000";
+
 
 function downloadArrayAsTxtFile(array, fileName) {
     const content = array.join('\n');
@@ -35,6 +37,31 @@ const chunkArray = (array, size) => {
 
     return chunkedArray;
 };
+
+function downloadProxies(status) {
+    const endpoint = `${SERVER_BASE_URL}/proxies/download/${status}`;
+
+    fetch(endpoint)
+        .then((response) => {
+            if (response.ok) {
+                return response.blob();
+            } else {
+                throw new Error('Error downloading proxies');
+            }
+        })
+        .then((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `proxies_${status}.txt`;
+            link.click();
+            URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+            console.error(error);
+            // Handle fetch error
+        });
+}
 
 class Tab1 {
     constructor() {
@@ -283,7 +310,6 @@ class Tab2 {
 
 }
 
-
 class Tab3 {
     constructor() {
         this.tbody = document.getElementById("pane3_tbody");
@@ -373,8 +399,91 @@ class Tab3 {
 
 }
 
+class Tab4 {
+    constructor() {
+        this.form = document.getElementById("pane4_form");
+        this.fileInput = document.getElementById("pane4_file_input")
+        this.downloadAllButton = document.getElementById("pane4_all_download");
+        this.downloadInactiveButton = document.getElementById("pane4_inactive_download");
+        this.downloadActiveButton = document.getElementById("pane4_active_download");
+        this.deleteInactiveButton = document.getElementById("pane4_inactive_delete");
+        this.activeProxyCountContainer = document.getElementById("pane4_active_proxies_count");
+        this.inactiveProxyCountCountainer = document.getElementById("pane4_inactive_proxies_count");
+        this.allProxyCountContainer = document.getElementById("pane4_total_proxies_count");
+
+        fetch(`${SERVER_BASE_URL}/proxies/count`)
+            .then(response => response.json())
+            .then((response) => {
+                const {activeCount, inactiveCount, totalCount} = response;
+                this.activeProxyCountContainer.innerText = activeCount;
+                this.inactiveProxyCountCountainer.innerText = inactiveCount;
+                this.allProxyCountContainer.innerText = totalCount;
+            })
+
+        this.downloadInactiveButton.addEventListener('click', () => {
+            downloadProxies('inactive');
+        });
+
+        this.downloadActiveButton.addEventListener('click', () => {
+            downloadProxies('active');
+        });
+
+        this.downloadAllButton.addEventListener('click', () => {
+            downloadProxies('all');
+        });
+
+        this.deleteInactiveButton.addEventListener("click", () => {
+            fetch(`${SERVER_BASE_URL}/proxies/inactive`, {
+                method: 'DELETE',
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        // Inactive proxies deleted successfully
+                        alert('Inactive proxies deleted successfully');
+                        window.location.reload();
+                    } else {
+                        // Handle error response
+                        throw new Error('Error deleting inactive proxies');
+                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                    window.location.reload();
+                });
+        });
+
+        this.form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const file = this.fileInput.files[0];
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch(`${SERVER_BASE_URL}/proxies/upload`, {
+                method: 'POST',
+                body: formData
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        alert('Proxies uploaded successfully');
+                        window.location.reload();
+                    } else {
+                        throw new Error('Error uploading proxies');
+                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                    alert('Proxies uploading failed' + error.message);
+                    window.location.reload();
+                });
+        });
+
+    }
+}
+
 const tab1 = new Tab1();
 const tab2 = new Tab2();
 const tab3 = new Tab3();
+const tab4 = new Tab4();
 
 console.log("Loaded");

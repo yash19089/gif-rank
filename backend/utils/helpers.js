@@ -1,7 +1,8 @@
 const crypto = require('crypto');
-const {Task} = require("./sequelize");
+const {Task, Proxy} = require("./sequelize");
 const {sqs} = require("./aws");
 const { Op, Sequelize} = require('sequelize');
+const axios = require("axios");
 
 // Generate batch ID using IP, time, and random number
 const generateBatchId = (ip) => {
@@ -61,7 +62,58 @@ const sendTasksToQueue = async () => {
     }
 };
 
+let lastProxyId = -1;
+
+const proxyHealthChecker = async () => {
+    console.log(`Picking proxies above id: ${lastProxyId}`);
+    const proxyData = await Proxy.findAll({
+        where: {
+            isInactive: {
+                [Op.ne]: true,
+            },
+            id: {
+                [Op.gt]: lastProxyId,
+            },
+        },
+        limit: 1, // Limit the number of records to 250
+    });
+
+    if(proxyData.length === 0){
+        console.log(`Resetting last proxy Id to -1`);
+        lastProxyId = -1;
+    }
+
+    const url = `https://api.giphy.com/v1/gifs/search?q=test&key=KS6TYwUbP40o6bHh4Je0QOMXRlBTx6Pa&limit=1`;
+
+    for(const proxy of proxyData){
+        lastProxyId = proxy.id;
+        const config = {
+            proxy: {
+                protocol: 'http',
+                host: proxy.ip,
+                port: proxy.port,
+                auth: {
+                    username: proxy.username,
+                    password: proxy.password,
+                }
+            },
+            url: url,
+            method: 'get',
+            headers: {},
+            timeout: 1000*5
+        };
+
+        axios(config).then(() => {
+          //Do nothing
+        }).catch(() => {
+            proxy.isInactive = true;
+            proxy.save();
+        })
+    }
+}
+
 module.exports = {
     generateBatchId,
-    sendTasksToQueue
+    sendTasksToQueue,
+    proxyHealthChecker
 };

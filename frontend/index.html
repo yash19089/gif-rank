@@ -22,9 +22,9 @@
         <li class="nav-item">
             <a class="nav-link" id="tab3" data-bs-toggle="tab" href="#pane3">Watch Progress</a>
         </li>
-<!--        <li class="nav-item">-->
-<!--            <a class="nav-link" id="tab4" data-bs-toggle="tab" href="#pane4">View Rank History</a>-->
-<!--        </li>-->
+        <li class="nav-item">
+            <a class="nav-link" id="tab4" data-bs-toggle="tab" href="#pane4">Proxies</a>
+        </li>
     </ul>
 
     <div class="tab-content mt-2" id="myTabContent">
@@ -97,8 +97,35 @@
             </table>
         </div>
         <div class="tab-pane fade" id="pane4">
-            <h3>Content for Tab 4</h3>
-            <p>This is the content that will be displayed when Tab 4 is active.</p>
+            <h3>Proxies</h3>
+            <p>
+                Active Proxies
+                <span class="badge bg-success" id="pane4_active_proxies_count"></span>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <button id="pane4_active_download" class="btn btn-primary">Download</button>
+                </div>
+                <div class="col-auto">
+                    <form class="d-flex" id="pane4_form">
+                        <div class="form-group">
+                            <input type="file" id="pane4_file_input" name="proxy_file" class="form-control" accept=".txt">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload/Add More</button>
+                    </form>
+                </div>
+            </div>
+            </p>
+            <p>
+                Inactive Proxies
+                <span class="badge bg-danger" id="pane4_inactive_proxies_count"></span>
+                <button id="pane4_inactive_download" class="btn btn-primary">Download</button>
+                <button id="pane4_inactive_delete" class="btn btn-danger">Delete All</button>
+            </p>
+            <p>
+                Total Proxies
+                <span class="badge bg-primary" id="pane4_total_proxies_count"></span>
+                <button id="pane4_all_download" class="btn btn-primary">Download</button>
+            </p>
         </div>
     </div>
 </div>
