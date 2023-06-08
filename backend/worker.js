@@ -311,7 +311,7 @@ const loadProxies = async () => {
                 [Op.ne]: true,
             },
         },
-        order: Sequelize.literal('RANDOM()'), // Order the results randomly
+        order: Sequelize.literal('RAND()'), // Order the results randomly
         limit: 250, // Limit the number of records to 250
     });
     for(const proxy of proxyData){
