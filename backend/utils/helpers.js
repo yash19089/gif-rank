@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const {Task, Proxy} = require("./sequelize");
+const {Task, Proxy, sequelize} = require("./sequelize");
 const {sqs} = require("./aws");
 const { Op, Sequelize} = require('sequelize');
 const axios = require("axios");
@@ -65,6 +65,22 @@ const sendTasksToQueue = async () => {
 let lastProxyId = -1;
 
 const proxyHealthChecker = async () => {
+
+    try {
+
+        await sequelize.query(
+            "UPDATE Proxies SET isInactive = 0 WHERE isInactive = 1 AND updatedAt < (NOW() - INTERVAL 20 MINUTE)",
+            {
+                type: sequelize.QueryTypes.UPDATE
+            }
+        )
+
+        console.log(`Reset proxies`);
+
+    } catch (e) {
+        console.log("Failed to reset proxies", e);
+    }
+
     console.log(`Picking proxies above id: ${lastProxyId}`);
     const proxyData = await Proxy.findAll({
         where: {
@@ -75,7 +91,7 @@ const proxyHealthChecker = async () => {
                 [Op.gt]: lastProxyId,
             },
         },
-        limit: 1, // Limit the number of records to 250
+        limit: 10, // Limit the number of records to 250
     });
 
     if(proxyData.length === 0){
@@ -98,9 +114,7 @@ const proxyHealthChecker = async () => {
                 }
             },
             url: url,
-            method: 'get',
-            headers: {},
-            timeout: 1000*5
+            method: 'get'
         };
 
         axios(config).then(() => {
