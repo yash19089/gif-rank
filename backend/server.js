@@ -5,7 +5,7 @@ const {generateBatchId, sendTasksToQueue, proxyHealthChecker} = require('./utils
 const cors = require('cors');
 const axios = require("axios");
 const fs = require('fs');
-const {Sequelize} = require("sequelize");
+const {Sequelize, Op} = require("sequelize");
 const fileUpload = require('express-fileupload');
 
 
@@ -217,6 +217,12 @@ app.get('/progress', async (req, res) => {
                 ]
             ],
             group: ['tagName', 'batchId'],
+            where: {
+                updatedAt: {
+                    [Op.gte]: Sequelize.literal('NOW() - INTERVAL 1 DAY')
+                }
+            },
+            order: [[Sequelize.literal('createdAt'), 'DESC']],
         });
 
         res.json(progressData);
@@ -230,5 +236,5 @@ app.get('/progress', async (req, res) => {
 app.listen(3000, () => {
     console.log('Server listening on port 3000');
     setInterval(sendTasksToQueue, 30000); // Runs every 30 seconds
-    setInterval(proxyHealthChecker, 10000)
+    setInterval(proxyHealthChecker, 30000)
 });
