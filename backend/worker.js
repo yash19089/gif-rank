@@ -13,8 +13,7 @@ const requestBinTest = async (proxySettings) => {
         proxy: proxySettings,
         url: `https://eo9wv8c69rkmzjd.m.pipedream.net`,
         method: 'get',
-        headers: {},
-        timeout: 1000*5
+        headers: {}
     };
     return await axios(config);
 }
@@ -24,8 +23,7 @@ const getGiphyRandomUserId = async (proxySettings) => {
         proxy: proxySettings,
         url: `https://api.giphy.com/v1/randomid?api_key=${frontendMobileApiKey}`,
         method: 'get',
-        headers: {},
-        timeout: 1000*5
+        headers: {}
     };
     try{
         const response = await axios(config);
@@ -55,8 +53,7 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
                 proxy: proxySettings,
                 url: url,
                 method: 'get',
-                headers: {},
-                timeout: 1000*5
+                headers: {}
             };
 
             const response = await axios(config);
@@ -126,8 +123,7 @@ const dispatchPingback = async (gif, position, randomId, pingbackId, proxySettin
         url: `https://pingback.giphy.com/v2/pingback?api_key=${frontendMobileApiKey}&pingback_id=${pingbackId}`,
         method: 'post',
         headers: {},
-        data: body,
-        timeout: 1000*5
+        data: body
     };
 
     // console.log(config);
