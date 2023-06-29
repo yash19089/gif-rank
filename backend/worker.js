@@ -279,7 +279,7 @@ const processMessage = async (message) => {
         }
     }
 
-    const hitsLeft = Math.min(targetCount - currentCount, proxies.length, 50);
+    const hitsLeft = Math.min(targetCount - currentCount, proxies.length, 100);
     console.log(`${gifId} @ ${tagName} starting hits: ${hitsLeft}.`);
     const hitsDone = await doHitsAndReport(tagName, gifId, hitsLeft);
 
@@ -359,7 +359,7 @@ const loadProxies = async () => {
             },
         },
         order: Sequelize.literal('RAND()'), // Order the results randomly
-        limit: 50, // Limit the number of records to 250
+        limit: 100, // Limit the number of records to 250
     });
     for(const proxy of proxyData){
         proxies.push({
