@@ -273,6 +273,7 @@ const processMessage = async (message) => {
     );
 
     console.log(`${gifId} @ ${tagName} marked in processing`)
+    feasibilityOffset = 0;
     console.time("Determining feasibility.");
     const feasibilityStatus = await getFeasibilityStatus(tagName, gifId);
     console.timeEnd("Determining feasibility.");
