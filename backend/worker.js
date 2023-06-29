@@ -42,7 +42,7 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
     const initialOffset = Math.max(0, feasibilityOffset - (limit/2));
     let offset = initialOffset;
     let pageRecordsCount = limit;
-    let totalRecordsCount = 250;
+    let totalRecordsCount = offset + 2500;
     let rating = 'pg-13';
     const q = tagName.toLowerCase();
     const targetId = gifId;
@@ -310,7 +310,7 @@ const processMessage = async (message) => {
         }
     }
 
-    const hitsLeft = Math.min(targetCount - currentCount, proxies.length, 200);
+    const hitsLeft = Math.min(targetCount - currentCount, proxies.length, 150);
     console.log(`${gifId} @ ${tagName} starting hits: ${hitsLeft}.`);
     const hitsDone = await doHitsAndReport(tagName, gifId, hitsLeft);
 
@@ -390,7 +390,7 @@ const loadProxies = async () => {
             },
         },
         order: Sequelize.literal('RAND()'), // Order the results randomly
-        limit: 200, // Limit the number of records to 250
+        limit: 150, // Limit the number of records to 250
     });
     for(const proxy of proxyData){
         proxies.push({
