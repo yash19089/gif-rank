@@ -72,6 +72,7 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
             offset+=limit;
         }
     } catch (e){
+        console.log(e.message);
         return {gif: null, position: -1};
     }
 
