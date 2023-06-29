@@ -7,6 +7,8 @@ const {Op, Sequelize} = require("sequelize");
 const proxies = [];
 let isProcessingMessage = false;
 let frontendMobileApiKey = "KS6TYwUbP40o6bHh4Je0QOMXRlBTx6Pa";
+// const {TaskFeasibilityEnum} = require("./types");
+const TaskFeasibilityEnum = Object.freeze({"POSSIBLE":1, "IMPOSSIBLE":0, "UNABLE_TO_DETERMINE":-1});
 
 const requestBinTest = async (proxySettings) => {
     const config = {
@@ -43,6 +45,8 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
     const q = tagName.toLowerCase();
     const targetId = gifId;
     const apiKey = frontendMobileApiKey;
+    let error = null;
+    let body0  = null;
 
     let indexCount = 0;
 
@@ -59,10 +63,17 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
             const response = await axios(config);
             const body = await response;
 
+            if(typeof (body.data) === "string"){
+                console.log("Skipping, found string instead of object")
+                throw new Error("Found string instead of object");
+            }
+
+            body0 = body.data;
+
             const gifs = body.data.data;
             for(let i = 0; i < gifs.length; i++){
                 if(gifs[i].id === targetId){
-                    return {gif: gifs[i], position: indexCount};
+                    return {gif: gifs[i], position: indexCount, error: null};
                 }
                 indexCount++;
             }
@@ -71,20 +82,43 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
             totalRecordsCount = body.data.pagination.total_count;
             offset+=limit;
         }
-    } catch (e){
-        console.log(e.message);
-        return {gif: null, position: -1};
+    } catch (error0){
+        console.log(typeof body0);
+        if(body0 != null){
+            console.log(`body.data type => ${typeof (body0.data)}`);
+            console.log(`body.data isArray? => ${Array.isArray(body0.data)}`);
+        }
+        console.log(error0.message, offset, apiKey, limit, rating, randomId, pingbackId, q, tagName, proxySettings, `${body0}`.substring(0,100));
+        return {gif: null, position: -1, error: error0};
     }
 
-    return {gif: null, position: -1};
+    return {gif: null, position: -1, error: null};
 }
 
-const isTaskPossible = async (tagName, gifId) => {
+const getFeasibilityStatus = async (tagName, gifId) => {
     const proxySettings = getProxySettingsByIndex(0);
     const randomId = await getGiphyRandomUserId(proxySettings);
     const pingbackId = `${randomId}${Math.random().toString(36).slice(-5)}`;
-    const {gif,position} = await paginateUntilFound(tagName, gifId, randomId, pingbackId, proxySettings);
-    return !(gif === null || position < 0);
+    const {gif,position,error} = await paginateUntilFound(tagName, gifId, randomId, pingbackId, proxySettings);
+    if(error !== null){
+        console.log(`Error during checking feasibility: ${error.message}`);
+        if(error.response){
+            console.log(`Axios error, marking proxy ${proxies[0].id} as inactive`);
+            await Proxy.update(
+                {
+                    isInactive: true,
+                },
+                {
+                    where: { id: proxies[0].id },
+                }
+            );
+        }
+        return TaskFeasibilityEnum.UNABLE_TO_DETERMINE;
+    }
+    if(gif === null || position < 0){
+        return TaskFeasibilityEnum.IMPOSSIBLE;
+    }
+    return TaskFeasibilityEnum.POSSIBLE;
 }
 
 const dispatchPingback = async (gif, position, randomId, pingbackId, proxySettings) => {
@@ -210,26 +244,42 @@ const processMessage = async (message) => {
 
     console.log(`${gifId} @ ${tagName} marked in processing`)
     console.time("Determining feasibility.");
-    const isPossible = await isTaskPossible(tagName, gifId);
+    const feasibilityStatus = await getFeasibilityStatus(tagName, gifId);
     console.timeEnd("Determining feasibility.");
 
-    if(!isPossible){
-        console.log(`Not possible for ${gifId} @ ${tagName}`)
-        await Task.update(
-            {
-                isProcessing: false,
-                isPossible: false,
-            },
-            {
-                where: { id: task.id },
-            }
-        );
-        return false;
-    } else {
-        console.log(`${gifId} @ ${tagName} is possible.`)
+
+    switch (feasibilityStatus) {
+        case TaskFeasibilityEnum.UNABLE_TO_DETERMINE: {
+            console.log(`Unable to determine. Will check later. ${gifId} @ ${tagName}`)
+            await Task.update(
+                {
+                    isProcessing: false,
+                },
+                {
+                    where: { id: task.id },
+                }
+            );
+            return;
+        }
+        case TaskFeasibilityEnum.IMPOSSIBLE: {
+            console.log(`Not possible for ${gifId} @ ${tagName}`)
+            await Task.update(
+                {
+                    isProcessing: false,
+                    isPossible: false,
+                },
+                {
+                    where: { id: task.id },
+                }
+            );
+            return;
+        }
+        case TaskFeasibilityEnum.POSSIBLE: {
+            console.log(`${gifId} @ ${tagName} is possible.`)
+        }
     }
 
-    const hitsLeft = Math.min(targetCount - currentCount, proxies.length, 200);
+    const hitsLeft = Math.min(targetCount - currentCount, proxies.length, 50);
     console.log(`${gifId} @ ${tagName} starting hits: ${hitsLeft}.`);
     const hitsDone = await doHitsAndReport(tagName, gifId, hitsLeft);
 
@@ -309,10 +359,11 @@ const loadProxies = async () => {
             },
         },
         order: Sequelize.literal('RAND()'), // Order the results randomly
-        limit: 250, // Limit the number of records to 250
+        limit: 50, // Limit the number of records to 250
     });
     for(const proxy of proxyData){
         proxies.push({
+            id: proxy.id,
             host: proxy.ip,
             port: proxy.port,
             username: proxy.username,
