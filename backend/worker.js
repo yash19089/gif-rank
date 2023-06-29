@@ -6,6 +6,7 @@ const shuffle = require('shuffle-array');
 const {Op, Sequelize} = require("sequelize");
 const proxies = [];
 let isProcessingMessage = false;
+let feasibilityOffset  = 0;
 let frontendMobileApiKey = "KS6TYwUbP40o6bHh4Je0QOMXRlBTx6Pa";
 // const {TaskFeasibilityEnum} = require("./types");
 const TaskFeasibilityEnum = Object.freeze({"POSSIBLE":1, "IMPOSSIBLE":0, "UNABLE_TO_DETERMINE":-1});
@@ -37,8 +38,9 @@ const getGiphyRandomUserId = async (proxySettings) => {
 }
 
 const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySettings) => {
-    let offset = 0;
     let limit = 50;
+    const initialOffset = Math.max(0, feasibilityOffset - (limit/2));
+    let offset = initialOffset;
     let pageRecordsCount = limit;
     let totalRecordsCount = 250;
     let rating = 'pg-13';
@@ -47,12 +49,13 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
     const apiKey = frontendMobileApiKey;
     let error = null;
     let body0  = null;
+    let url = null;
 
     let indexCount = 0;
 
     try {
         while(pageRecordsCount >= limit && offset <= totalRecordsCount){
-            let url = `https://api.giphy.com/v1/gifs/search?q=${q}&offset=${offset}&api_key=${apiKey}&limit=${limit}&rating=${rating}&random_id=${randomId}&pingback_id=${pingbackId}`;
+            url = `https://api.giphy.com/v1/gifs/search?q=${q}&offset=${offset}&api_key=${apiKey}&limit=${limit}&rating=${rating}&random_id=${randomId}&pingback_id=${pingbackId}`;
             const config = {
                 proxy: proxySettings,
                 url: url,
@@ -73,7 +76,7 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
             const gifs = body.data.data;
             for(let i = 0; i < gifs.length; i++){
                 if(gifs[i].id === targetId){
-                    return {gif: gifs[i], position: indexCount, error: null};
+                    return {gif: gifs[i], position: (indexCount + initialOffset), error: null};
                 }
                 indexCount++;
             }
@@ -88,7 +91,7 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
             console.log(`body.data type => ${typeof (body0.data)}`);
             console.log(`body.data isArray? => ${Array.isArray(body0.data)}`);
         }
-        console.log(error0.message, offset, apiKey, limit, rating, randomId, pingbackId, q, tagName, proxySettings, `${body0}`.substring(0,100));
+        console.log(error0.message, url, proxySettings, `${body0}`.substring(0,100));
         return {gif: null, position: -1, error: error0};
     }
 
@@ -118,6 +121,8 @@ const getFeasibilityStatus = async (tagName, gifId) => {
     if(gif === null || position < 0){
         return TaskFeasibilityEnum.IMPOSSIBLE;
     }
+    feasibilityOffset = position;
+    console.log("Feasibility Offset", feasibilityOffset);
     return TaskFeasibilityEnum.POSSIBLE;
 }
 
