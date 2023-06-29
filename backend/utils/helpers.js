@@ -75,14 +75,14 @@ const proxyHealthChecker = async () => {
             }
         )
 
-        console.log(`Reset proxies`);
+        console.log(`Marking proxies to become active again.`);
 
     } catch (e) {
-        console.log("Failed to reset proxies", e);
+        console.log("Failed to mark proxies as active", e);
     }
 
     console.log(`Picking proxies above id: ${lastProxyId}`);
-    const proxyData = await Proxy.findAll({
+    const proxies = await Proxy.findAll({
         where: {
             isInactive: {
                 [Op.ne]: true,
@@ -94,14 +94,14 @@ const proxyHealthChecker = async () => {
         limit: 10, // Limit the number of records to 250
     });
 
-    if(proxyData.length === 0){
+    if(proxies.length === 0){
         console.log(`Resetting last proxy Id to -1`);
         lastProxyId = -1;
     }
 
     const url = `https://api.giphy.com/v1/gifs/search?q=test&key=KS6TYwUbP40o6bHh4Je0QOMXRlBTx6Pa&limit=1`;
 
-    for(const proxy of proxyData){
+    for(const proxy of proxies){
         lastProxyId = proxy.id;
         const config = {
             proxy: {
@@ -117,12 +117,14 @@ const proxyHealthChecker = async () => {
             method: 'get'
         };
 
-        axios(config).then(() => {
-          //Do nothing
-        }).catch(() => {
+        try {
+            await axios(config);
+            console.log(`Proxy ${proxy.id} works fine`);
+        } catch (e) {
+            console.log(`Marking proxy ${proxy.id} as inactive`);
             proxy.isInactive = true;
-            proxy.save();
-        })
+            await proxy.save();
+        }
     }
 }
 
