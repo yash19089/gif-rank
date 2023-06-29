@@ -14,7 +14,7 @@ COPY package*.json ./
 RUN npm install
 
 # Copy the worker.js script to the container
-COPY worker.js .
+COPY . .
 
 # Specify the command to run the script
 CMD ["node", "worker.js"]
