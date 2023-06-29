@@ -55,7 +55,14 @@ const paginateUntilFound = async (tagName, gifId, randomId, pingbackId, proxySet
 
     try {
         while(pageRecordsCount >= limit && offset <= totalRecordsCount){
+
             url = `https://api.giphy.com/v1/gifs/search?q=${q}&offset=${offset}&api_key=${apiKey}&limit=${limit}&rating=${rating}&random_id=${randomId}&pingback_id=${pingbackId}`;
+
+            if(feasibilityOffset > 0 && Math.abs(feasibilityOffset - offset) > limit * 3){
+                console.log(`Skipping ${url} because FO ${feasibilityOffset} and O ${offset}. Diff: ${Math.abs(feasibilityOffset - offset)}`)
+                return {gif: null, position: -1, error: null};
+            }
+
             const config = {
                 proxy: proxySettings,
                 url: url,
@@ -106,7 +113,7 @@ const getFeasibilityStatus = async (tagName, gifId) => {
     if(error !== null){
         console.log(`Error during checking feasibility: ${error.message}`);
         if(error.response){
-            console.log(`Axios error, marking proxy ${proxies[0].id} as inactive`);
+            console.log(`FF: Axios error, marking proxy ${proxies[0].id} as inactive`);
             await Proxy.update(
                 {
                     isInactive: true,
@@ -186,6 +193,12 @@ function getProxySettingsByIndex(proxyIndex) {
     }
 }
 
+function getProxyIdByIndex(proxyIndex) {
+    proxyIndex = Math.floor(proxyIndex);
+    proxyIndex = proxyIndex%proxies.length;
+    return proxies[proxyIndex].id;
+}
+
 const doHitsAndReport = async (tagName, gifId, hitsLeft) => {
     const requests = [];
     let sumPositions = 0;
@@ -197,7 +210,19 @@ const doHitsAndReport = async (tagName, gifId, hitsLeft) => {
                 const proxySettings = getProxySettingsByIndex(i);
                 const randomId = await getGiphyRandomUserId(proxySettings);
                 const pingbackId = `${randomId}${Math.random().toString(36).slice(-5)}`;
-                const {gif,position} = await paginateUntilFound(tagName, gifId, randomId, pingbackId, proxySettings);
+                const {gif,position,error} = await paginateUntilFound(tagName, gifId, randomId, pingbackId, proxySettings);
+                if(error && error.response){
+                    const proxyId = getProxyIdByIndex(i);
+                    console.log(`RF: Marking ${proxyId} as inactive`);
+                    await Proxy.update(
+                        {
+                            isInactive: true,
+                        },
+                        {
+                            where: { id: proxyId },
+                        }
+                    );
+                }
                 if(gif === null || position < 0){
                     throw new Error("empty gif");
                 }
