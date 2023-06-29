@@ -69,7 +69,7 @@ const proxyHealthChecker = async () => {
     try {
 
         await sequelize.query(
-            "UPDATE Proxies SET isInactive = 0 WHERE isInactive = 1 AND updatedAt < (NOW() - INTERVAL 20 MINUTE)",
+            "UPDATE Proxies SET isInactive = 0 WHERE isInactive = 1 AND updatedAt < (NOW() - INTERVAL 10 MINUTE)",
             {
                 type: sequelize.QueryTypes.UPDATE
             }
@@ -80,6 +80,8 @@ const proxyHealthChecker = async () => {
     } catch (e) {
         console.log("Failed to mark proxies as active", e);
     }
+
+    return;
 
     console.log(`Picking proxies above id: ${lastProxyId}`);
     const proxies = await Proxy.findAll({
